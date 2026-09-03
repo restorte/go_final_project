@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"os"
+	"scheduler/internal/api"
 	"strconv"
 )
 
@@ -13,6 +14,8 @@ func StartServer() error {
 			port = p
 		}
 	}
+
+	http.HandleFunc("/api/nextdate", api.NextDateHandler)
 
 	http.Handle("/", http.FileServer(http.Dir("./web")))
 
