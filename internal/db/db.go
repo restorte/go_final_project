@@ -10,11 +10,11 @@ import (
 var DB *sqlx.DB
 
 type Task struct {
-	ID      int64  `db:"id"`
-	Date    string `db:"date"`
-	Title   string `db:"title"`
-	Comment string `db:"comment"`
-	Repeat  string `db:"repeat"`
+	ID      int64  `db:"id" json:"id,omitempty"`
+	Date    string `db:"date" json:"date"`
+	Title   string `db:"title" json:"title"`
+	Comment string `db:"comment" json:"comment,omitempty"`
+	Repeat  string `db:"repeat" json:"repeat,omitempty"`
 }
 
 func Init(dbFile string) error {
@@ -43,7 +43,6 @@ func Init(dbFile string) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -52,4 +51,13 @@ func Close() error {
 		return DB.Close()
 	}
 	return nil
+}
+
+func AddTask(task *Task) (int64, error) {
+	query := `INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)`
+	res, err := DB.Exec(query, task.Date, task.Title, task.Comment, task.Repeat)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
 }

@@ -16,6 +16,7 @@ func StartServer() error {
 	}
 
 	http.HandleFunc("/api/nextdate", api.NextDateHandler)
+	http.HandleFunc("/api/task", api.TaskHandler)
 
 	http.Handle("/", http.FileServer(http.Dir("./web")))
 
