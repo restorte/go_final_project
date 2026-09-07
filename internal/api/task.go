@@ -80,3 +80,17 @@ func writeJSONError(w http.ResponseWriter, msg string, status int) {
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }
+
+func TasksHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSONError(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	search := r.URL.Query().Get("search")
+	tasks, err := db.Tasks(50, search)
+	if err != nil {
+		writeJSONError(w, "database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, map[string]interface{}{"tasks": tasks})
+}
