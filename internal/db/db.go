@@ -94,6 +94,29 @@ func Tasks(limit int, search string) ([]Task, error) {
 	return tasks, nil
 }
 
+func GetTask(id int64) (Task, error) {
+	var task Task
+	query := `SELECT id, date, title, comment, repeat FROM scheduler WHERE id = ?`
+	err := DB.Get(&task, query, id)
+	return task, err
+}
+
+func UpdateTask(task *Task) error {
+	query := `UPDATE scheduler SET date=?, title=?, comment=?, repeat=? WHERE id=?`
+	res, err := DB.Exec(query, task.Date, task.Title, task.Comment, task.Repeat, task.ID)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return errors.New("task not found")
+	}
+	return nil
+}
+
 func isDate(s string) bool {
 	if len(s) != 10 {
 		return false
