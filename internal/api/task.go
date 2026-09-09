@@ -16,6 +16,8 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 		getTaskHandler(w, r)
 	case http.MethodPut:
 		updateTaskHandler(w, r)
+	case http.MethodDelete:
+		deleteTaskHandler(w, r)
 	default:
 		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
 	}
@@ -144,6 +146,78 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := db.UpdateTask(&task); err != nil {
+		writeJSONError(w, "database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, map[string]interface{}{})
+}
+
+func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.URL.Query().Get("id")
+	if idStr == "" {
+		writeJSONError(w, "id is required", http.StatusBadRequest)
+		return
+	}
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		writeJSONError(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+	if err := db.DeleteTask(id); err != nil {
+		writeJSONError(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	writeJSON(w, map[string]interface{}{})
+}
+
+func DoneTaskHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSONError(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := r.URL.Query().Get("id")
+	if idStr == "" {
+		writeJSONError(w, "id is required", http.StatusBadRequest)
+		return
+	}
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		writeJSONError(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	task, err := db.GetTask(id)
+	if err != nil {
+		writeJSONError(w, "task not found", http.StatusNotFound)
+		return
+	}
+
+	if task.Repeat == "" {
+		if err := db.DeleteTask(id); err != nil {
+			writeJSONError(w, "database error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, map[string]interface{}{})
+		return
+	}
+
+	now := time.Now().Format(dateFormat)
+	nextDate, err := NextDate(now, task.Date, task.Repeat)
+	if err != nil {
+		writeJSONError(w, "cannot compute next date: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	if nextDate == "" {
+		if err := db.DeleteTask(id); err != nil {
+			writeJSONError(w, "database error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, map[string]interface{}{})
+		return
+	}
+
+	if err := db.UpdateDate(id, nextDate); err != nil {
 		writeJSONError(w, "database error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}

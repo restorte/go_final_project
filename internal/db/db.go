@@ -117,6 +117,38 @@ func UpdateTask(task *Task) error {
 	return nil
 }
 
+func UpdateDate(id int64, date string) error {
+	query := `UPDATE scheduler SET date=? WHERE id=?`
+	res, err := DB.Exec(query, date, id)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return errors.New("task not found")
+	}
+	return nil
+}
+
+func DeleteTask(id int64) error {
+	query := `DELETE FROM scheduler WHERE id=?`
+	res, err := DB.Exec(query, id)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return errors.New("task not found")
+	}
+	return nil
+}
+
 func isDate(s string) bool {
 	if len(s) != 10 {
 		return false
